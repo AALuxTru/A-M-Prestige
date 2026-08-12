@@ -6,10 +6,9 @@
 const app = {
     // URL de Google Apps Script
     GAS_URL: "https://script.google.com/macros/s/AKfycbzEOc60qnM5ehbXsQb1UfCmQj_irzNiHF4I-gr7vDYwo5QwHpGQj7bHzNmk5o0mTJrW/exec", 
-    WHATSAPP_NUMBER: "584120000000",
 
     state: {
-        products: [],
+        products: [], // Estado inicia completamente vacío sin mock data
         cart: [],
         currentView: 'home',
         categoryFilter: null,
@@ -58,11 +57,20 @@ const app = {
         if (navLinks) navLinks.classList.remove('active');
     },
 
-    // --- CARGA DE DATOS ---
+    // --- CARGA DE DATOS (Manejo de Estado de Carga y Seguridad) ---
     fetchProducts: async function() {
+        const catalogContainer = document.getElementById('catalog-products');
+        
+        // Inyección del estado de carga previo al fetch
+        if (catalogContainer) {
+            catalogContainer.innerHTML = `<p style="text-align: center; grid-column: 1/-1;">Cargando catálogo de productos...</p>`;
+        }
+
         try {
             const response = await fetch(this.GAS_URL);
-            if (!response.ok) throw new Error('Error al conectar con la base de datos');
+            if (!response.ok) {
+                throw new Error('Error al conectar con la base de datos');
+            }
             
             const data = await response.json();
             this.state.products = Array.isArray(data) ? data : (data.products || []);
@@ -73,6 +81,10 @@ const app = {
             }
         } catch (error) {
             console.error("Error obteniendo los productos:", error);
+            alert("Ocurrió un error al intentar conectar con la base de datos.");
+            if (catalogContainer) {
+                catalogContainer.innerHTML = `<p style="text-align: center; grid-column: 1/-1;">No se pudieron cargar los productos.</p>`;
+            }
         }
     },
 
@@ -119,6 +131,7 @@ const app = {
         container.innerHTML = itemsToRender.map(p => this.createProductCard(p)).join('');
     },
 
+    // MÉTODO REEMPLAZADO CON LA LÓGICA DE FILTRADO CORRECTA
     renderCatalog: function() {
         const container = document.getElementById('catalog-products');
         if (!container) return;
@@ -126,30 +139,39 @@ const app = {
         let filtered = this.state.products;
         
         if (this.state.categoryFilter) {
-            const cat = this.state.categoryFilter.toLowerCase();
-            if (['plata', 'acero', 'goldfield', 'yess', 'tempus'].includes(cat)) {
-                filtered = filtered.filter(p => (p.category || p.categoria || '').toLowerCase() === cat);
-            } else if (cat === 'relojeria') {
-                filtered = filtered.filter(p => ['yess', 'tempus'].includes((p.category || p.categoria || '').toLowerCase()));
-            } else if (cat === 'joyeria') {
-                filtered = filtered.filter(p => ['plata', 'acero', 'goldfield'].includes((p.category || p.categoria || '').toLowerCase()));
-            }
+            const filterValue = this.state.categoryFilter.toUpperCase().trim();
+            
+            filtered = filtered.filter(p => {
+                // Agregamos p.dept y p.cat por si tus columnas en Sheets se llaman así
+                const rawCategory = p.category || p.categoria || p.Categoria || p.material || p.dept || p.cat || '';
+                const productCategory = String(rawCategory).toUpperCase().trim();
+                
+                if (filterValue === 'JOYERIA') {
+                    return productCategory === 'ACERO' || productCategory === 'GOLDFIELD' || productCategory === 'PLATA';
+                }
+                
+                // CORRECCIÓN: Mapeo de las subclases de la vista home a la categoría principal de la base de datos
+                if (filterValue === 'YESS' || filterValue === 'TEMPUS' || filterValue === 'RELOJERIA') {
+                    return productCategory.includes('RELOJERIA');
+                }
+                
+                // Búsqueda para PLATA, ACERO, GOLDFIELD y cualquier otra categoría directa
+                return productCategory.includes(filterValue);
+            });
         }
         
         if (filtered.length === 0) {
-            container.innerHTML = `<p style="grid-column: 1/-1; text-align:center;">No se encontraron productos.</p>`;
+            container.innerHTML = `<p style="grid-column: 1/-1; text-align:center;">No se encontraron productos en esta categoría.</p>`;
             this.renderPagination(0);
             return;
         }
 
-        // Aplicar paginación (máximo 32 por página)
         const startIndex = (this.state.currentPage - 1) * this.state.itemsPerPage;
         const endIndex = startIndex + this.state.itemsPerPage;
         const paginatedProducts = filtered.slice(startIndex, endIndex);
 
         container.innerHTML = paginatedProducts.map(p => this.createProductCard(p)).join('');
 
-        // Renderizar botones de paginación
         this.renderPagination(filtered.length);
     },
 
@@ -289,7 +311,7 @@ const app = {
         }
     },
 
-    // --- CHECKOUT ---
+    // --- CHECKOUT (MIGRADO A PETICIÓN POST) ---
     goToCheckout: function() {
         if (this.state.cart.length === 0) {
             alert('Tu carrito está vacío');
@@ -299,35 +321,67 @@ const app = {
         this.navigate('checkout');
     },
 
-    processCheckout: function(e) {
+    processCheckout: async function(e) {
         e.preventDefault();
-        
-        const name = document.getElementById('chk-name').value;
-        const phone = document.getElementById('chk-phone').value;
-        const city = document.getElementById('chk-city').value;
-        const address = document.getElementById('chk-address').value;
-        const payment = document.getElementById('chk-payment').value;
-        const notes = document.getElementById('chk-notes').value;
 
-        let total = 0;
-        let orderText = `*NUEVO PEDIDO - A&M PRESTIGE*%0A%0A`;
-        orderText += `*Cliente:* ${name}%0A`;
-        orderText += `*Ciudad:* ${city}%0A`;
-        orderText += `*Dirección:* ${address}%0A`;
-        orderText += `*Pago:* ${payment}%0A`;
-        if (notes) orderText += `*Notas:* ${notes}%0A`;
-        orderText += `%0A*DETALLE:*%0A`;
+        if (this.state.cart.length === 0) {
+            alert('Tu carrito está vacío');
+            return;
+        }
 
-        this.state.cart.forEach(item => {
-            let sub = item.price * item.qty;
-            total += sub;
-            orderText += `- ${item.qty}x ${item.name} ($${item.price.toFixed(2)}) = $${sub.toFixed(2)}%0A`;
-        });
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn ? submitBtn.innerHTML : '';
 
-        orderText += `%0A*TOTAL: $${total.toFixed(2)}*`;
+        // Deshabilitar botón durante el procesamiento
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'Procesando pedido...';
+        }
 
-        const waURL = `https://wa.me/${this.WHATSAPP_NUMBER}?text=${orderText}`;
-        window.open(waURL, '_blank');
+        const payload = {
+            customer: {
+                name: document.getElementById('chk-name').value,
+                phone: document.getElementById('chk-phone').value,
+                city: document.getElementById('chk-city').value,
+                payment: document.getElementById('chk-payment').value,
+                address: document.getElementById('chk-address').value,
+                notes: document.getElementById('chk-notes').value
+            },
+            cart: this.state.cart,
+            total: this.state.cart.reduce((sum, item) => sum + (item.price * item.qty), 0)
+        };
+
+        try {
+            // CORRECCIÓN: Se agrega mode: 'no-cors' para las peticiones a Google Apps Script
+            await fetch(this.GAS_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            // CORRECCIÓN: Eliminada la validación !response.ok ya que 'no-cors' siempre devuelve status 0.
+            // Si llega hasta aquí sin lanzar excepción de red, asumimos éxito.
+
+            // Limpiar carrito y persistir estado
+            this.state.cart = [];
+            this.saveCart();
+
+            alert('¡Tu pedido ha sido procesado exitosamente!');
+            e.target.reset();
+            this.navigate('home');
+
+        } catch (error) {
+            console.error("Error al procesar el checkout:", error);
+            alert('Ocurrió un error al procesar tu pedido. Por favor, verifica tu conexión e intenta nuevamente.');
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            }
+        }
     }
 };
 
