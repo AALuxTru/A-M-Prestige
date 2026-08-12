@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A&M Prestige | Bisutería Fina y Relojería</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <header>
+        <div class="nav-container">
+            <div class="menu-toggle" id="mobile-menu-btn"><i class="fas fa-bars"></i></div>
+            <a href="#" class="logo playfair" onclick="app.navigate('home')">A&M Prestige</a>
+            
+            <nav class="nav-links" id="nav-links">
+                <a href="#" onclick="app.navigate('home')">Inicio</a>
+                <a href="#" onclick="app.navigate('catalog', 'joyeria')">Joyería</a>
+                <a href="#" onclick="app.navigate('catalog', 'relojeria')">Relojería</a>
+                <a href="#" onclick="app.navigate('catalog', 'ofertas')">Ofertas</a>
+                <a href="#">Nosotros</a>
+                <a href="#">Contacto</a>
+            </nav>
+
+            <div class="nav-icons">
+                <i class="fas fa-search"></i>
+                <i class="far fa-user"></i>
+                <div class="cart-icon-container" onclick="app.toggleCart()">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span class="cart-count" id="cart-count">0</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- VISTA: HOME -->
+        <div id="view-home" class="view active">
+            <!-- HERO -->
+            <section class="hero">
+                <div class="hero-content">
+                    <h1 class="playfair">Detalles que hablan de ti</h1>
+                    <p>Plata 925, acero 316L, goldfield y relojes seleccionados.</p>
+                    <button class="btn btn-accent" onclick="app.navigate('catalog')">Comprar ahora</button>
+                </div>
+            </section>
+
+            <!-- CATEGORIES -->
+            <section class="container">
+                <div class="section-header">
+                    <h2 class="playfair">Nuestras Colecciones</h2>
+                    <p>Encuentra la pieza perfecta para cada ocasión</p>
+                </div>
+                <div class="categories-grid">
+                    <div class="category-card" onclick="app.navigate('catalog', 'plata')">
+                        <img src="https://images.unsplash.com/photo-1599643477877-530eb83abc8e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Plata 925">
+                        <div class="category-overlay"><h3>Plata Italia 925</h3></div>
+                    </div>
+                    <div class="category-card" onclick="app.navigate('catalog', 'acero')">
+                        <img src="https://images.unsplash.com/photo-1611591437281-460bfbe1220a?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Acero 316L">
+                        <div class="category-overlay"><h3>Acero 316L</h3></div>
+                    </div>
+                    <div class="category-card" onclick="app.navigate('catalog', 'goldfield')">
+                        <img src="https://images.unsplash.com/photo-1601121141461-9d6647bca1ed?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Goldfield">
+                        <div class="category-overlay"><h3>Goldfield</h3></div>
+                    </div>
+                    <div class="category-card" onclick="app.navigate('catalog', 'yess')">
+                        <img src="https://images.unsplash.com/photo-1524805444758-089113d48a6d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Relojes Yess">
+                        <div class="category-overlay"><h3>Relojes Yess</h3></div>
+                    </div>
+                    <div class="category-card" onclick="app.navigate('catalog', 'tempus')">
+                        <img src="https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Relojes Tempus">
+                        <div class="category-overlay"><h3>Relojes Tempus</h3></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- DESTACADOS -->
+            <section class="container" style="background-color: var(--color-bg);">
+                <div class="section-header">
+                    <h2 class="playfair">Piezas Destacadas</h2>
+                    <p>Selección premium de temporada</p>
+                </div>
+                <div class="products-grid" id="featured-products">
+                    <!-- Inyectado por JS -->
+                </div>
+                <div style="text-align: center; margin-top: 40px;">
+                    <button class="btn btn-outline" onclick="app.navigate('catalog')">Ver Catálogo Completo</button>
+                </div>
+            </section>
+
+            <!-- TRUST SECTION -->
+            <section class="trust-section">
+                <div class="container trust-grid">
+                    <div class="trust-item">
+                        <i class="fas fa-gem"></i>
+                        <h4 class="playfair">Calidad Garantizada</h4>
+                        <p>Materiales auténticos y seleccionados.</p>
+                    </div>
+                    <div class="trust-item">
+                        <i class="fas fa-gift"></i>
+                        <h4 class="playfair">Empaque Elegante</h4>
+                        <p>Presentación perfecta para regalar.</p>
+                    </div>
+                    <div class="trust-item">
+                        <i class="fas fa-headset"></i>
+                        <h4 class="playfair">Atención Personalizada</h4>
+                        <p>Te asesoramos en cada paso.</p>
+                    </div>
+                    <div class="trust-item">
+                        <i class="fas fa-exchange-alt"></i>
+                        <h4 class="playfair">Cambios y Devoluciones</h4>
+                        <p>Compra con total confianza.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- VISTA: CATALOGO -->
+        <div id="view-catalog" class="view">
+            <section class="container">
+                <div class="section-header">
+                    <h2 class="playfair">Catálogo Completo</h2>
+                    <p id="catalog-subtitle">Explora nuestra colección</p>
+                </div>
+                <div class="products-grid" id="catalog-products">
+                    <!-- Inyectado por JS -->
+                </div>
+                <!-- Contenedor para los controles de paginación -->
+                <div id="pagination-controls" style="text-align: center; margin-top: 2.5rem; display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap;"></div>
+            </section>
+        </div>
+
+        <!-- VISTA: CHECKOUT -->
+        <div id="view-checkout" class="view">
+            <section class="container">
+                <div class="section-header">
+                    <h2 class="playfair">Finalizar Compra</h2>
+                    <p>Completa tus datos para procesar el pedido vía WhatsApp</p>
+                </div>
+                
+                <div class="checkout-container">
+                    <form id="checkout-form" onsubmit="app.processCheckout(event)">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nombre Completo *</label>
+                                <input type="text" id="chk-name" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Teléfono (WhatsApp) *</label>
+                                <input type="tel" id="chk-phone" class="form-control" placeholder="+58 412 1234567" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Ciudad *</label>
+                                <input type="text" id="chk-city" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Método de Pago *</label>
+                                <select id="chk-payment" class="form-control" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="Pago Móvil">Pago Móvil</option>
+                                    <option value="Transferencia Bancaria">Transferencia Bancaria</option>
+                                    <option value="Zelle">Zelle / Divisas</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Dirección de Envío / Entrega *</label>
+                            <input type="text" id="chk-address" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Notas del Pedido (Opcional)</label>
+                            <textarea id="chk-notes" class="form-control" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-accent checkout-btn" style="font-size:1.1rem; padding: 15px;">Enviar Pedido por WhatsApp <i class="fab fa-whatsapp"></i></button>
+                    </form>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <h4>A&M Prestige</h4>
+                    <p>Bisutería fina y relojería de alta gama. Detalles que hablan de ti, diseñados para acompañarte en cada momento.</p>
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#"><i class="fab fa-tiktok"></i></a>
+                    </div>
+                </div>
+                <div class="footer-col">
+                    <h4>Categorías</h4>
+                    <a href="#" onclick="app.navigate('catalog', 'plata')">Plata Italia 925</a>
+                    <a href="#" onclick="app.navigate('catalog', 'acero')">Acero Inoxidable 316L</a>
+                    <a href="#" onclick="app.navigate('catalog', 'goldfield')">Goldfield</a>
+                    <a href="#" onclick="app.navigate('catalog', 'relojeria')">Relojería (Yess, Tempus)</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Políticas</h4>
+                    <a href="#">Términos y Condiciones</a>
+                    <a href="#">Políticas de Envío</a>
+                    <a href="#">Cambios y Devoluciones</a>
+                    <a href="#">Métodos de Pago</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Contacto</h4>
+                    <p><i class="fab fa-whatsapp"></i> +58 412-0000000</p>
+                    <p><i class="far fa-envelope"></i> ventas@amprestige.com</p>
+                    <p><i class="fas fa-map-marker-alt"></i> Caracas, Venezuela</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 A&M Prestige. Todos los derechos reservados. | Desarrollado para uso interno.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- CART SIDEBAR -->
+    <div class="modal-overlay" id="cart-overlay" onclick="app.toggleCart()"></div>
+    <div class="cart-sidebar" id="cart-sidebar">
+        <div class="cart-header">
+            <h3 class="playfair">Tu Carrito</h3>
+            <i class="fas fa-times close-cart" onclick="app.toggleCart()"></i>
+        </div>
+        <div class="cart-items" id="cart-items-container">
+            <!-- Items del carrito -->
+        </div>
+        <div class="cart-footer">
+            <div class="cart-total">
+                <span>Total:</span>
+                <span id="cart-total-price">$0.00</span>
+            </div>
+            <button class="btn btn-accent checkout-btn" onclick="app.goToCheckout()">Proceder al Pago</button>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--color-text-main); color:white; padding:12px 24px; border-radius:4px; display:none; z-index:9999;">
+        Añadido al carrito
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
