@@ -3,7 +3,7 @@
  */
 
 const app = {
-    GAS_URL: "https://script.google.com/macros/s/TU_SCRIPT_ID/execRIPT", 
+    GAS_URL: "https://script.google.com/macros/s/TU_SCRIPT_ID/exec", 
     WHATSAPP_NUMBER: "584125918677", 
 
     state: {
@@ -59,6 +59,20 @@ const app = {
         document.getElementById('nav-links').classList.remove('active');
     },
 
+    // --- UTILIDAD PARA FORMATEAR IMÁGENES DE DRIVE ---
+    formatImageUrl: function(url) {
+        if (!url) return '';
+        if (!url.includes('drive.google.com')) return url;
+        
+        // Extrae el ID de la imagen de Google Drive
+        const match = url.match(/[-\w]{25,}/);
+        if (match && match[0]) {
+            // Usar el endpoint de miniaturas (thumbnail) evita el error 403 Forbidden de Google
+            return `https://drive.google.com/thumbnail?id=${match[0]}&sz=w800`;
+        }
+        return url;
+    },
+
     // --- NUEVA LÓGICA DE BÚSQUEDA ---
     toggleSearch: function() {
         const input = document.getElementById('search-input');
@@ -86,26 +100,12 @@ const app = {
         }
     },
 
-    // --- UTILIDAD PARA FORMATEAR IMÁGENES DE DRIVE ---
-    formatImageUrl: function(url) {
-        if (!url) return '';
-        if (!url.includes('drive.google.com')) return url;
-        
-        const match = url.match(/[-\w]{25,}/);
-        if (match && match[0]) {
-            return `https://drive.google.com/uc?export=view&id=${match[0]}`;
-        }
-        return url;
-    },
-
-    // --- CARGA DE DATOS Y MARKUP DE PRECIOS ---
+    // --- CARGA DE DATOS ---
     fetchProducts: async function() {
         try {
-            // Hacemos la petición a Google Apps Script
             let res = await fetch(this.GAS_URL + "?action=getProducts");
             let data = await res.json();
 
-            // Mapeamos los datos reales del backend y aplicamos el markup del 50%
             this.state.products = data.map(prod => {
                 const basePrice = parseFloat(prod.price || prod.Precio || 0);
 
@@ -114,8 +114,8 @@ const app = {
                     name: prod.name || prod.Nombre || '',
                     category: String(prod.category || prod.Categoria || '').toLowerCase(),
                     material: prod.material || prod.Material || '',
-                    price: basePrice * 1.5, // Multiplicador de +50%
-                    img: this.formatImageUrl(prod.img || prod.Imagen || ''), // Formateo aplicado
+                    price: basePrice,
+                    img: this.formatImageUrl(prod.img || prod.Imagen || ''),
                     stock: parseInt(prod.stock || prod.Stock || 0),
                     featured: prod.featured === true || prod.featured === "TRUE" || prod.Destacado === true
                 };
