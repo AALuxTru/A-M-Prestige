@@ -1,122 +1,144 @@
 /**
  * Lógica principal del Frontend para A&M Prestige
- * Compatible con Google Apps Script y Paginación Dinámica.
  */
 
 const app = {
-    // URL de Google Apps Script
-    GAS_URL: "https://script.google.com/macros/s/AKfycbzEOc60qnM5ehbXsQb1UfCmQj_irzNiHF4I-gr7vDYwo5QwHpGQj7bHzNmk5o0mTJrW/exec", 
+    GAS_URL: "https://script.google.com/macros/s/TU_SCRIPT_ID/execRIPT", 
+    WHATSAPP_NUMBER: "584125918677", 
 
     state: {
-        products: [], // Estado inicia completamente vacío sin mock data
+        products: [],
         cart: [],
         currentView: 'home',
         categoryFilter: null,
-        // Paginación
-        currentPage: 1,
-        itemsPerPage: 32
+        searchQuery: '',
+        currentPage: 1,      // NUEVO: Control de página actual
+        itemsPerPage: 12     // NUEVO: Cantidad de productos por página
     },
 
     init: function() {
         this.loadCart();
         this.bindEvents();
-        this.fetchProducts();
+        this.fetchProducts(); 
     },
 
     bindEvents: function() {
-        const menuBtn = document.getElementById('mobile-menu-btn');
-        if (menuBtn) {
-            menuBtn.addEventListener('click', () => {
-                document.getElementById('nav-links').classList.toggle('active');
-            });
-        }
+        document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+            document.getElementById('nav-links').classList.toggle('active');
+        });
     },
 
-    // --- NAVEGACIÓN SPA ---
     navigate: function(view, category = null) {
         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-        const targetView = document.getElementById(`view-${view}`);
-        if (targetView) targetView.classList.add('active');
-        
+        document.getElementById(`view-${view}`).classList.add('active');
         this.state.currentView = view;
+        this.state.currentPage = 1; // Reseteo a página 1 al cambiar de vista
+
+        // Al navegar, limpiamos la búsqueda para que no se arrastre entre vistas sin intención
+        if(!this.state.searchQuery || view !== 'catalog') {
+            this.state.searchQuery = '';
+            const searchInput = document.getElementById('search-input');
+            if(searchInput) searchInput.value = '';
+        }
+
         window.scrollTo(0, 0);
 
         if (view === 'catalog') {
             this.state.categoryFilter = category;
-            this.state.currentPage = 1; // Reiniciar página al cambiar de vista o categoría
             this.renderCatalog();
             
-            const subtitle = category 
-                ? `Mostrando resultados para: ${category.toUpperCase()}` 
-                : 'Explora nuestra colección completa';
-            const subElem = document.getElementById('catalog-subtitle');
-            if (subElem) subElem.innerText = subtitle;
+            let subtitle = 'Explora nuestra colección completa';
+            if (this.state.searchQuery) {
+                subtitle = `Resultados de búsqueda para: "${this.state.searchQuery}"`;
+            } else if (category) {
+                subtitle = `Mostrando resultados para: ${category.toUpperCase()}`;
+            }
+            document.getElementById('catalog-subtitle').innerText = subtitle;
         }
 
-        const navLinks = document.getElementById('nav-links');
-        if (navLinks) navLinks.classList.remove('active');
+        document.getElementById('nav-links').classList.remove('active');
     },
 
-    // --- CARGA DE DATOS (Manejo de Estado de Carga y Seguridad) ---
+    // --- NUEVA LÓGICA DE BÚSQUEDA ---
+    toggleSearch: function() {
+        const input = document.getElementById('search-input');
+        input.classList.toggle('active');
+        if (input.classList.contains('active')) {
+            input.focus();
+        }
+    },
+
+    handleSearch: function(e) {
+        this.state.searchQuery = e.target.value.toLowerCase().trim();
+        this.state.currentPage = 1; // Reseteo a página 1 al realizar una nueva búsqueda
+        
+        // Si el usuario escribe, redirigimos automáticamente a la vista catálogo para ver los resultados
+        if (this.state.currentView !== 'catalog') {
+            this.navigate('catalog', this.state.categoryFilter);
+        } else {
+            this.renderCatalog();
+            
+            // Actualizar subtítulo en vivo
+            const subtitle = this.state.searchQuery 
+                ? `Resultados de búsqueda para: "${this.state.searchQuery}"` 
+                : (this.state.categoryFilter ? `Mostrando resultados para: ${this.state.categoryFilter.toUpperCase()}` : 'Explora nuestra colección completa');
+            document.getElementById('catalog-subtitle').innerText = subtitle;
+        }
+    },
+
+    // --- UTILIDAD PARA FORMATEAR IMÁGENES DE DRIVE ---
+    formatImageUrl: function(url) {
+        if (!url) return '';
+        if (!url.includes('drive.google.com')) return url;
+        
+        const match = url.match(/[-\w]{25,}/);
+        if (match && match[0]) {
+            return `https://drive.google.com/uc?export=view&id=${match[0]}`;
+        }
+        return url;
+    },
+
+    // --- CARGA DE DATOS Y MARKUP DE PRECIOS ---
     fetchProducts: async function() {
-        const catalogContainer = document.getElementById('catalog-products');
-        
-        // Inyección del estado de carga previo al fetch
-        if (catalogContainer) {
-            catalogContainer.innerHTML = `<p style="text-align: center; grid-column: 1/-1;">Cargando catálogo de productos...</p>`;
-        }
-
         try {
-            const response = await fetch(this.GAS_URL);
-            if (!response.ok) {
-                throw new Error('Error al conectar con la base de datos');
-            }
-            
-            const data = await response.json();
-            this.state.products = Array.isArray(data) ? data : (data.products || []);
-            
-            this.renderFeatured();
-            if (this.state.currentView === 'catalog') {
-                this.renderCatalog();
-            }
-        } catch (error) {
-            console.error("Error obteniendo los productos:", error);
-            alert("Ocurrió un error al intentar conectar con la base de datos.");
-            if (catalogContainer) {
-                catalogContainer.innerHTML = `<p style="text-align: center; grid-column: 1/-1;">No se pudieron cargar los productos.</p>`;
-            }
-        }
-    },
+            // Hacemos la petición a Google Apps Script
+            let res = await fetch(this.GAS_URL + "?action=getProducts");
+            let data = await res.json();
 
-    // --- CAMBIO DE PÁGINA ---
-    changePage: function(pageNumber) {
-        this.state.currentPage = pageNumber;
-        
-        const catalogContainer = document.getElementById('catalog-products');
-        if (catalogContainer) {
-            catalogContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Mapeamos los datos reales del backend y aplicamos el markup del 50%
+            this.state.products = data.map(prod => {
+                const basePrice = parseFloat(prod.price || prod.Precio || 0);
+
+                return {
+                    id: String(prod.id || prod.ID || ''),
+                    name: prod.name || prod.Nombre || '',
+                    category: String(prod.category || prod.Categoria || '').toLowerCase(),
+                    material: prod.material || prod.Material || '',
+                    price: basePrice * 1.5, // Multiplicador de +50%
+                    img: this.formatImageUrl(prod.img || prod.Imagen || ''), // Formateo aplicado
+                    stock: parseInt(prod.stock || prod.Stock || 0),
+                    featured: prod.featured === true || prod.featured === "TRUE" || prod.Destacado === true
+                };
+            });
+
+            this.renderFeatured();
+            if(this.state.currentView === 'catalog') this.renderCatalog();
+
+        } catch (error) {
+            console.error("Error al obtener los productos desde la base de datos:", error);
         }
-        
-        this.renderCatalog();
     },
 
     // --- RENDERIZADO ---
     createProductCard: function(prod) {
-        const priceNum = typeof prod.price === 'number' ? prod.price : parseFloat(prod.price || prod.precio || 0);
-        const priceFormatted = isNaN(priceNum) ? '0.00' : priceNum.toFixed(2);
-        const imgSrc = prod.img || prod.imagen || 'https://images.unsplash.com/photo-1599643477877-530eb83abc8e?auto=format&fit=crop&w=400&q=80';
-        const prodName = prod.name || prod.nombre || 'Producto';
-        const prodMat = prod.material || prod.categoria || prod.category || '';
-        const isFeatured = prod.featured || prod.destacado || false;
-
         return `
             <div class="product-card">
-                ${isFeatured ? '<div class="product-badge">Destacado</div>' : ''}
+                ${prod.featured ? '<div class="product-badge">Destacado</div>' : ''}
                 <i class="fas fa-heart product-fav"></i>
-                <img src="${imgSrc}" alt="${prodName}" class="product-img">
-                <div class="product-category">${prodMat}</div>
-                <h3 class="product-title">${prodName}</h3>
-                <div class="product-price">$${priceFormatted}</div>
+                <img src="${prod.img}" alt="${prod.name}" class="product-img">
+                <div class="product-category">${prod.material}</div>
+                <h3 class="product-title">${prod.name}</h3>
+                <div class="product-price">$${prod.price.toFixed(2)}</div>
                 <button class="add-to-cart-btn" onclick="app.addToCart('${prod.id}')">Agregar al Carrito</button>
             </div>
         `;
@@ -124,100 +146,99 @@ const app = {
 
     renderFeatured: function() {
         const container = document.getElementById('featured-products');
-        if (!container) return;
-
-        const featured = this.state.products.filter(p => p.featured || p.destacado);
-        const itemsToRender = featured.length > 0 ? featured.slice(0, 4) : this.state.products.slice(0, 4);
-        container.innerHTML = itemsToRender.map(p => this.createProductCard(p)).join('');
+        const featured = this.state.products.filter(p => p.featured).slice(0, 4);
+        container.innerHTML = featured.map(p => this.createProductCard(p)).join('');
     },
 
-    // MÉTODO REEMPLAZADO CON LA LÓGICA DE FILTRADO CORRECTA
     renderCatalog: function() {
         const container = document.getElementById('catalog-products');
-        if (!container) return;
-
         let filtered = this.state.products;
         
-        if (this.state.categoryFilter) {
-            const filterValue = this.state.categoryFilter.toUpperCase().trim();
-            
+        // 1. Aplicar filtro de búsqueda
+        if (this.state.searchQuery) {
             filtered = filtered.filter(p => {
-                // Agregamos p.dept y p.cat por si tus columnas en Sheets se llaman así
-                const rawCategory = p.category || p.categoria || p.Categoria || p.material || p.dept || p.cat || '';
-                const productCategory = String(rawCategory).toUpperCase().trim();
-                
-                if (filterValue === 'JOYERIA') {
-                    return productCategory === 'ACERO' || productCategory === 'GOLDFIELD' || productCategory === 'PLATA';
-                }
-                
-                // CORRECCIÓN: Mapeo de las subclases de la vista home a la categoría principal de la base de datos
-                if (filterValue === 'YESS' || filterValue === 'TEMPUS' || filterValue === 'RELOJERIA') {
-                    return productCategory.includes('RELOJERIA');
-                }
-                
-                // Búsqueda para PLATA, ACERO, GOLDFIELD y cualquier otra categoría directa
-                return productCategory.includes(filterValue);
+                const searchLower = this.state.searchQuery;
+                const nameMatch = p.name.toLowerCase().includes(searchLower);
+                const idMatch = p.id.toLowerCase() === searchLower;
+                return nameMatch || idMatch;
             });
+        } 
+        // 2. Aplicar filtro por categoría
+        else if (this.state.categoryFilter) {
+            if(['plata', 'acero', 'goldfield', 'yess'].includes(this.state.categoryFilter)) {
+                filtered = filtered.filter(p => p.category === this.state.categoryFilter);
+            } else if (this.state.categoryFilter === 'relojeria') {
+                filtered = filtered.filter(p => p.category === 'yess');
+            } else if (this.state.categoryFilter === 'joyeria') {
+                filtered = filtered.filter(p => ['plata', 'acero', 'goldfield'].includes(p.category));
+            }
         }
         
-        if (filtered.length === 0) {
-            container.innerHTML = `<p style="grid-column: 1/-1; text-align:center;">No se encontraron productos en esta categoría.</p>`;
-            this.renderPagination(0);
+        if(filtered.length === 0) {
+            container.innerHTML = `<p style="grid-column: 1/-1; text-align:center;">No se encontraron productos.</p>`;
+            document.getElementById('pagination-container').innerHTML = '';
             return;
         }
 
-        const startIndex = (this.state.currentPage - 1) * this.state.itemsPerPage;
-        const endIndex = startIndex + this.state.itemsPerPage;
-        const paginatedProducts = filtered.slice(startIndex, endIndex);
-
-        container.innerHTML = paginatedProducts.map(p => this.createProductCard(p)).join('');
-
-        this.renderPagination(filtered.length);
-    },
-
-    renderPagination: function(totalFilteredItems) {
-        const paginationContainer = document.getElementById('pagination-controls');
-        if (!paginationContainer) return;
+        // --- LÓGICA DE PAGINACIÓN ---
+        const totalPages = Math.ceil(filtered.length / this.state.itemsPerPage);
         
-        paginationContainer.innerHTML = '';
-        
-        const totalPages = Math.ceil(totalFilteredItems / this.state.itemsPerPage);
-
-        if (totalPages <= 1) return;
-
-        // Botón "Anterior"
-        const prevBtn = document.createElement('button');
-        prevBtn.textContent = 'Anterior';
-        prevBtn.className = 'btn btn-outline';
-        prevBtn.disabled = this.state.currentPage === 1;
-        if (this.state.currentPage === 1) prevBtn.style.opacity = '0.5';
-        
-        prevBtn.addEventListener('click', () => {
-            if (this.state.currentPage > 1) this.changePage(this.state.currentPage - 1);
-        });
-        paginationContainer.appendChild(prevBtn);
-
-        // Botones de Páginas Numéricas
-        for (let i = 1; i <= totalPages; i++) {
-            const pageBtn = document.createElement('button');
-            pageBtn.textContent = i;
-            pageBtn.className = this.state.currentPage === i ? 'btn btn-primary' : 'btn btn-outline';
-            
-            pageBtn.addEventListener('click', () => this.changePage(i));
-            paginationContainer.appendChild(pageBtn);
+        if (this.state.currentPage > totalPages) {
+            this.state.currentPage = 1;
         }
 
-        // Botón "Siguiente"
-        const nextBtn = document.createElement('button');
-        nextBtn.textContent = 'Siguiente';
-        nextBtn.className = 'btn btn-outline';
-        nextBtn.disabled = this.state.currentPage === totalPages;
-        if (this.state.currentPage === totalPages) nextBtn.style.opacity = '0.5';
-        
-        nextBtn.addEventListener('click', () => {
-            if (this.state.currentPage < totalPages) this.changePage(this.state.currentPage + 1);
-        });
-        paginationContainer.appendChild(nextBtn);
+        const startIndex = (this.state.currentPage - 1) * this.state.itemsPerPage;
+        const paginatedItems = filtered.slice(startIndex, startIndex + this.state.itemsPerPage);
+
+        container.innerHTML = paginatedItems.map(p => this.createProductCard(p)).join('');
+        this.renderPagination(totalPages);
+    },
+
+    renderPagination: function(totalPages) {
+        const container = document.getElementById('pagination-container');
+        if (totalPages <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+        const current = this.state.currentPage;
+        const maxVisible = 5; 
+
+        // Botón Anterior
+        html += `<button class="btn btn-outline page-btn ${current === 1 ? 'disabled' : ''}" onclick="if(${current} > 1) app.goToPage(${current - 1})">&laquo;</button>`;
+
+        let startPage = Math.max(1, current - 2);
+        let endPage = Math.min(totalPages, current + 2);
+
+        if (current <= 3) endPage = Math.min(totalPages, maxVisible);
+        if (current >= totalPages - 2) startPage = Math.max(1, totalPages - maxVisible + 1);
+
+        if (startPage > 1) {
+            html += `<button class="btn btn-outline page-btn" onclick="app.goToPage(1)">1</button>`;
+            if (startPage > 2) html += `<span class="page-dots">...</span>`;
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            const activeClass = i === current ? 'btn-accent' : 'btn-outline';
+            html += `<button class="btn ${activeClass} page-btn" onclick="app.goToPage(${i})">${i}</button>`;
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) html += `<span class="page-dots">...</span>`;
+            html += `<button class="btn btn-outline page-btn" onclick="app.goToPage(${totalPages})">${totalPages}</button>`;
+        }
+
+        // Botón Siguiente
+        html += `<button class="btn btn-outline page-btn ${current === totalPages ? 'disabled' : ''}" onclick="if(${current} < ${totalPages}) app.goToPage(${current + 1})">&raquo;</button>`;
+
+        container.innerHTML = html;
+    },
+
+    goToPage: function(page) {
+        this.state.currentPage = page;
+        this.renderCatalog();
+        window.scrollTo({ top: document.getElementById('view-catalog').offsetTop - 80, behavior: 'smooth' });
     },
 
     // --- CARRITO ---
@@ -233,30 +254,26 @@ const app = {
     },
 
     addToCart: function(id) {
-        const prod = this.state.products.find(p => String(p.id) === String(id));
+        const prod = this.state.products.find(p => p.id === id);
         if (!prod) return;
 
-        const existing = this.state.cart.find(item => String(item.id) === String(id));
+        const existing = this.state.cart.find(item => item.id === id);
         if (existing) {
             existing.qty++;
         } else {
-            const priceNum = typeof prod.price === 'number' ? prod.price : parseFloat(prod.price || prod.precio || 0);
-            const imgSrc = prod.img || prod.imagen || 'https://images.unsplash.com/photo-1599643477877-530eb83abc8e?auto=format&fit=crop&w=400&q=80';
-            const prodName = prod.name || prod.nombre || 'Producto';
-            
-            this.state.cart.push({ ...prod, id: prod.id, name: prodName, price: priceNum, img: imgSrc, qty: 1 });
+            this.state.cart.push({ ...prod, qty: 1 });
         }
         this.saveCart();
         this.showToast();
     },
 
     updateQty: function(id, delta) {
-        const item = this.state.cart.find(i => String(i.id) === String(id));
-        if (!item) return;
+        const item = this.state.cart.find(i => i.id === id);
+        if(!item) return;
         
         item.qty += delta;
-        if (item.qty <= 0) {
-            this.state.cart = this.state.cart.filter(i => String(i.id) !== String(id));
+        if(item.qty <= 0) {
+            this.state.cart = this.state.cart.filter(i => i.id !== id);
         }
         this.saveCart();
     },
@@ -268,12 +285,9 @@ const app = {
 
     updateCartUI: function() {
         const count = this.state.cart.reduce((sum, item) => sum + item.qty, 0);
-        const countElem = document.getElementById('cart-count');
-        if (countElem) countElem.innerText = count;
+        document.getElementById('cart-count').innerText = count;
 
         const container = document.getElementById('cart-items-container');
-        if (!container) return;
-
         if (this.state.cart.length === 0) {
             container.innerHTML = '<p style="text-align:center; margin-top:20px; color:#888;">Tu carrito está vacío</p>';
             document.getElementById('cart-total-price').innerText = '$0.00';
@@ -282,8 +296,7 @@ const app = {
 
         let total = 0;
         container.innerHTML = this.state.cart.map(item => {
-            let sub = item.price * item.qty;
-            total += sub;
+            total += item.price * item.qty;
             return `
                 <div class="cart-item">
                     <img src="${item.img}" alt="${item.name}">
@@ -305,15 +318,13 @@ const app = {
 
     showToast: function() {
         const toast = document.getElementById('toast');
-        if (toast) {
-            toast.style.display = 'block';
-            setTimeout(() => toast.style.display = 'none', 2000);
-        }
+        toast.style.display = 'block';
+        setTimeout(() => toast.style.display = 'none', 2000);
     },
 
-    // --- CHECKOUT (MIGRADO A PETICIÓN POST) ---
+    // --- CHECKOUT ---
     goToCheckout: function() {
-        if (this.state.cart.length === 0) {
+        if(this.state.cart.length === 0) {
             alert('Tu carrito está vacío');
             return;
         }
@@ -321,67 +332,35 @@ const app = {
         this.navigate('checkout');
     },
 
-    processCheckout: async function(e) {
+    processCheckout: function(e) {
         e.preventDefault();
+        
+        const name = document.getElementById('chk-name').value;
+        const phone = document.getElementById('chk-phone').value;
+        const city = document.getElementById('chk-city').value;
+        const address = document.getElementById('chk-address').value;
+        const payment = document.getElementById('chk-payment').value;
+        const notes = document.getElementById('chk-notes').value;
 
-        if (this.state.cart.length === 0) {
-            alert('Tu carrito está vacío');
-            return;
-        }
+        let total = 0;
+        let orderText = `*NUEVO PEDIDO - A&M PRESTIGE*%0A%0A`;
+        orderText += `*Cliente:* ${name}%0A`;
+        orderText += `*Ciudad:* ${city}%0A`;
+        orderText += `*Dirección:* ${address}%0A`;
+        orderText += `*Pago:* ${payment}%0A`;
+        if(notes) orderText += `*Notas:* ${notes}%0A`;
+        orderText += `%0A*DETALLE:*%0A`;
 
-        const submitBtn = e.target.querySelector('button[type="submit"]');
-        const originalBtnText = submitBtn ? submitBtn.innerHTML : '';
+        this.state.cart.forEach(item => {
+            let sub = item.price * item.qty;
+            total += sub;
+            orderText += `- ${item.qty}x ${item.name} ($${item.price}) = $${sub.toFixed(2)}%0A`;
+        });
 
-        // Deshabilitar botón durante el procesamiento
-        if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.innerText = 'Procesando pedido...';
-        }
+        orderText += `%0A*TOTAL: $${total.toFixed(2)}*`;
 
-        const payload = {
-            customer: {
-                name: document.getElementById('chk-name').value,
-                phone: document.getElementById('chk-phone').value,
-                city: document.getElementById('chk-city').value,
-                payment: document.getElementById('chk-payment').value,
-                address: document.getElementById('chk-address').value,
-                notes: document.getElementById('chk-notes').value
-            },
-            cart: this.state.cart,
-            total: this.state.cart.reduce((sum, item) => sum + (item.price * item.qty), 0)
-        };
-
-        try {
-            // CORRECCIÓN: Se agrega mode: 'no-cors' para las peticiones a Google Apps Script
-            await fetch(this.GAS_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'text/plain;charset=utf-8'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            // CORRECCIÓN: Eliminada la validación !response.ok ya que 'no-cors' siempre devuelve status 0.
-            // Si llega hasta aquí sin lanzar excepción de red, asumimos éxito.
-
-            // Limpiar carrito y persistir estado
-            this.state.cart = [];
-            this.saveCart();
-
-            alert('¡Tu pedido ha sido procesado exitosamente!');
-            e.target.reset();
-            this.navigate('home');
-
-        } catch (error) {
-            console.error("Error al procesar el checkout:", error);
-            alert('Ocurrió un error al procesar tu pedido. Por favor, verifica tu conexión e intenta nuevamente.');
-        } finally {
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnText;
-            }
-        }
+        const waURL = `https://wa.me/${this.WHATSAPP_NUMBER}?text=${orderText}`;
+        window.open(waURL, '_blank');
     }
 };
 
