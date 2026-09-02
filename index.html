@@ -9,7 +9,6 @@
 </head>
 <body>
 
-    <!-- NAVBAR -->
     <header>
         <div class="nav-container">
             <div class="menu-toggle" id="mobile-menu-btn"><i class="fas fa-bars"></i></div>
@@ -18,14 +17,17 @@
             <nav class="nav-links" id="nav-links">
                 <a href="#" onclick="app.navigate('home')">Inicio</a>
                 <a href="#" onclick="app.navigate('catalog', 'joyeria')">Joyería</a>
-                <a href="#" onclick="app.navigate('catalog', 'relojeria')">Relojería</a>
+                <a href="#" onclick="app.navigate('catalog', 'yess')">Relojería Yess</a>
                 <a href="#" onclick="app.navigate('catalog', 'ofertas')">Ofertas</a>
                 <a href="#">Nosotros</a>
                 <a href="#">Contacto</a>
             </nav>
 
             <div class="nav-icons">
-                <i class="fas fa-search"></i>
+                <div class="search-wrapper">
+                    <input type="text" id="search-input" placeholder="Buscar por nombre o ID (ej. P001)..." oninput="app.handleSearch(event)">
+                    <i class="fas fa-search" onclick="app.toggleSearch()"></i>
+                </div>
                 <i class="far fa-user"></i>
                 <div class="cart-icon-container" onclick="app.toggleCart()">
                     <i class="fas fa-shopping-bag"></i>
@@ -36,9 +38,7 @@
     </header>
 
     <main>
-        <!-- VISTA: HOME -->
         <div id="view-home" class="view active">
-            <!-- HERO -->
             <section class="hero">
                 <div class="hero-content">
                     <h1 class="playfair">Detalles que hablan de ti</h1>
@@ -47,7 +47,6 @@
                 </div>
             </section>
 
-            <!-- CATEGORIES -->
             <section class="container">
                 <div class="section-header">
                     <h2 class="playfair">Nuestras Colecciones</h2>
@@ -56,7 +55,7 @@
                 <div class="categories-grid">
                     <div class="category-card" onclick="app.navigate('catalog', 'plata')">
                         <img src="https://images.unsplash.com/photo-1599643477877-530eb83abc8e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Plata 925">
-                        <div class="category-overlay"><h3>Plata Italia 925</h3></div>
+                        <div class="category-overlay"><h3>Plata Italiana 925</h3></div>
                     </div>
                     <div class="category-card" onclick="app.navigate('catalog', 'acero')">
                         <img src="https://images.unsplash.com/photo-1611591437281-460bfbe1220a?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Acero 316L">
@@ -70,28 +69,21 @@
                         <img src="https://images.unsplash.com/photo-1524805444758-089113d48a6d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Relojes Yess">
                         <div class="category-overlay"><h3>Relojes Yess</h3></div>
                     </div>
-                    <div class="category-card" onclick="app.navigate('catalog', 'tempus')">
-                        <img src="https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Relojes Tempus">
-                        <div class="category-overlay"><h3>Relojes Tempus</h3></div>
-                    </div>
                 </div>
             </section>
 
-            <!-- DESTACADOS -->
             <section class="container" style="background-color: var(--color-bg);">
                 <div class="section-header">
                     <h2 class="playfair">Piezas Destacadas</h2>
                     <p>Selección premium de temporada</p>
                 </div>
                 <div class="products-grid" id="featured-products">
-                    <!-- Inyectado por JS -->
                 </div>
                 <div style="text-align: center; margin-top: 40px;">
                     <button class="btn btn-outline" onclick="app.navigate('catalog')">Ver Catálogo Completo</button>
                 </div>
             </section>
 
-            <!-- TRUST SECTION -->
             <section class="trust-section">
                 <div class="container trust-grid">
                     <div class="trust-item">
@@ -118,7 +110,6 @@
             </section>
         </div>
 
-        <!-- VISTA: CATALOGO -->
         <div id="view-catalog" class="view">
             <section class="container">
                 <div class="section-header">
@@ -126,14 +117,12 @@
                     <p id="catalog-subtitle">Explora nuestra colección</p>
                 </div>
                 <div class="products-grid" id="catalog-products">
-                    <!-- Inyectado por JS -->
                 </div>
-                <!-- Contenedor para los controles de paginación -->
-                <div id="pagination-controls" style="text-align: center; margin-top: 2.5rem; display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap;"></div>
+                <!-- CONTENEDOR DE PAGINACIÓN AÑADIDO -->
+                <div id="pagination-container" class="pagination-container"></div>
             </section>
         </div>
 
-        <!-- VISTA: CHECKOUT -->
         <div id="view-checkout" class="view">
             <section class="container">
                 <div class="section-header">
@@ -183,7 +172,6 @@
         </div>
     </main>
 
-    <!-- FOOTER -->
     <footer>
         <div class="container">
             <div class="footer-grid">
@@ -198,10 +186,10 @@
                 </div>
                 <div class="footer-col">
                     <h4>Categorías</h4>
-                    <a href="#" onclick="app.navigate('catalog', 'plata')">Plata Italia 925</a>
+                    <a href="#" onclick="app.navigate('catalog', 'plata')">Plata Italiana 925</a>
                     <a href="#" onclick="app.navigate('catalog', 'acero')">Acero Inoxidable 316L</a>
                     <a href="#" onclick="app.navigate('catalog', 'goldfield')">Goldfield</a>
-                    <a href="#" onclick="app.navigate('catalog', 'relojeria')">Relojería (Yess, Tempus)</a>
+                    <a href="#" onclick="app.navigate('catalog', 'yess')">Relojería Yess</a>
                 </div>
                 <div class="footer-col">
                     <h4>Políticas</h4>
@@ -223,16 +211,13 @@
         </div>
     </footer>
 
-    <!-- CART SIDEBAR -->
     <div class="modal-overlay" id="cart-overlay" onclick="app.toggleCart()"></div>
     <div class="cart-sidebar" id="cart-sidebar">
         <div class="cart-header">
             <h3 class="playfair">Tu Carrito</h3>
             <i class="fas fa-times close-cart" onclick="app.toggleCart()"></i>
         </div>
-        <div class="cart-items" id="cart-items-container">
-            <!-- Items del carrito -->
-        </div>
+        <div class="cart-items" id="cart-items-container"></div>
         <div class="cart-footer">
             <div class="cart-total">
                 <span>Total:</span>
@@ -242,7 +227,6 @@
         </div>
     </div>
 
-    <!-- TOAST NOTIFICATION -->
     <div id="toast" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--color-text-main); color:white; padding:12px 24px; border-radius:4px; display:none; z-index:9999;">
         Añadido al carrito
     </div>
