@@ -103,7 +103,7 @@ const app = {
         }
     },
 
-    // --- CARGA DE DATOS ---
+// --- CARGA DE DATOS ---
     fetchProducts: async function() {
         try {
             // CORREGIDO: Igualado al método de Brilho para evitar conflictos con Apps Script
@@ -112,22 +112,25 @@ const app = {
             let data = await res.json();
 
             this.state.products = data.map(prod => {
-    // Saneamiento de precio heredado de la lógica robusta
-    const rawPrice = String(prod.price || prod.Precio || 0);
-    const basePrice = parseFloat(rawPrice.replace(/[$\s]/g, '').replace(',', '.')) || 0;
+                // Saneamiento de precio heredado de la lógica robusta
+                const rawPrice = String(prod.price || prod.Precio || 0);
+                const basePrice = parseFloat(rawPrice.replace(/[$\s]/g, '').replace(',', '.')) || 0;
 
-    return {
-        id: String(prod.id || prod.ID || ''),
-        name: prod.name || prod.Nombre || '',
-        ref: prod.ref || prod.Ref || '', // ¡Se añade la extracción del código!
-        category: String(prod.cat || prod.category || prod.Categoria || '').toLowerCase().trim(), // Se añade .trim()
-        material: prod.material || prod.Material || '',
-        price: basePrice,
-        img: this.formatImageUrl(prod.img || prod.Imagen || ''),
-        stock: parseInt(prod.stock || prod.Stock || 0) || 0,
-        featured: prod.isNew === true || String(prod.isNew).toLowerCase() === 'true' || prod.isNew === 1 || prod.featured === true || prod.Destacado === true
-    };
-});
+                return {
+                    id: String(prod.id || prod.ID || ''),
+                    name: prod.name || prod.Nombre || '',
+                    ref: prod.ref || prod.Ref || '', // ¡Se añade la extracción del código!
+                    
+                    // Aquí ocurre la magia para que los filtros funcionen
+                    category: String(prod.cat || prod.category || prod.Categoria || '').toLowerCase().trim(), 
+                    
+                    material: prod.material || prod.Material || '',
+                    price: basePrice,
+                    img: this.formatImageUrl(prod.img || prod.Imagen || ''),
+                    stock: parseInt(prod.stock || prod.Stock || 0) || 0,
+                    featured: prod.isNew === true || String(prod.isNew).toLowerCase() === 'true' || prod.isNew === 1 || prod.featured === true || prod.Destacado === true
+                };
+            });
 
             this.renderFeatured();
             if(this.state.currentView === 'catalog') this.renderCatalog();
@@ -138,8 +141,8 @@ const app = {
     },
 
     renderFeatured: function() {
-        const container = document.getElementById('featured-products');
-        const featured = this.state.products.filter(p => p.featured).slice(0, 4);
+        const nameMatch = String(p.name).toLowerCase().includes(searchLower);
+        const refMatch = String(p.ref).toLowerCase().includes(searchLower); // Búsqueda por código de referencia
         container.innerHTML = featured.map(p => this.createProductCard(p)).join('');
     },
 
