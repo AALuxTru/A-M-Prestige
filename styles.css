@@ -331,14 +331,12 @@ section {
 
 /* --- ESTANDARIZACIÓN DE IMÁGENES (4:5 Ratio) --- */
 .product-img {
-    width: 100%;
-    /* Utiliza una relación de aspecto elegante (4 de ancho por 5 de alto) */
-    aspect-ratio: 4 / 5;
-    /* Elimina el height fijo (height: 250px) para que aspect-ratio tome el control */
-    height: auto; 
-    /* El object-fit recorta la imagen sin deformarla para que encuadre perfectamente */
-    object-fit: cover;
-    margin-bottom: 15px;
+    width: 100%; /* Ocupa todo el ancho de la tarjeta */
+    aspect-ratio: 4 / 5; /* Obliga a que la proporción sea siempre idéntica (ligeramente vertical) */
+    object-fit: cover; /* Recorta el sobrante de la imagen sin deformarla ni aplastarla */
+    display: block; 
+    margin-bottom: 15px; /* Da un respiro antes del texto */
+    border-radius: 4px; /* Opcional: suaviza un poco los bordes de la foto */
 }
 
 /* --- ESTILOS PARA LA BARRA DE BÚSQUEDA DEL NAVBAR --- */
