@@ -235,32 +235,19 @@ const app = {
     },
 
     // --- RENDERIZADO DE TARJETAS ---
-    createProductCard: function(p) {
-    const isOutOfStock = p.stock === 0;
-    const btnStyle = isOutOfStock ? 'opacity: 0.5; cursor: not-allowed;' : '';
-    const btnText = isOutOfStock ? 'Agotado' : 'Añadir al Carrito';
-    const badge = p.featured ? `<span style="position:absolute; top:10px; right:10px; background:var(--accent-color, #d4af37); color:#fff; padding:2px 8px; border-radius:12px; font-size:0.8rem;">Destacado</span>` : '';
-
-    // Escapar comillas para evitar que rompan el HTML
-    const safeName = String(p.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-
-    return `
-    <div class="product-card" style="position:relative;">
-        ${badge}
-        <img src="${p.img}" alt="${safeName}" style="${isOutOfStock ? 'opacity:0.5;' : ''}" onerror="this.src='assets/placeholder.png'">
-        <div class="product-info">
-            <span style="font-size: 0.8rem; color: #888; text-transform: uppercase;">${p.category}</span>
-            <h3 class="product-title" style="margin: 5px 0;">${p.name}</h3>
-            <p style="font-size: 0.85rem; color: #666; margin-bottom: 5px;">Ref: ${p.ref || 'N/A'}</p>
-            <div class="product-price" style="font-weight: bold; margin-bottom: 10px;">$${p.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
-            <button class="btn btn-primary" style="width:100%; ${btnStyle}" 
-                    onclick="app.addToCart('${p.id}')" ${isOutOfStock ? 'disabled' : ''}>
-                ${btnText}
-            </button>
-        </div>
-    </div>
-    `;
-},
+    createProductCard: function(prod) {
+        return `
+            <div class="product-card">
+                ${prod.featured ? '<div class="product-badge">Destacado</div>' : ''}
+                <i class="fas fa-heart product-fav"></i>
+                <img src="${prod.img}" alt="${prod.name}" class="product-img">
+                <div class="product-category">${prod.material}</div>
+                <h3 class="product-title">${prod.name}</h3>
+                <div class="product-price">$${prod.price.toFixed(2)}</div>
+                <button class="add-to-cart-btn" onclick="app.addToCart('${prod.id}')">Agregar al Carrito</button>
+            </div>
+        `;
+    },
 
     // --- CARRITO ---
     loadCart: function() {
