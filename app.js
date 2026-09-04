@@ -141,9 +141,15 @@ const app = {
     },
 
     renderFeatured: function() {
-        const nameMatch = String(p.name).toLowerCase().includes(searchLower);
-        const refMatch = String(p.ref).toLowerCase().includes(searchLower); // Búsqueda por código de referencia
-        container.innerHTML = featured.map(p => this.createProductCard(p)).join('');
+    // 1. Buscamos el contenedor (asegúrate de que el ID coincida con tu HTML)
+    const container = document.getElementById('featured-products');
+    if (!container) return; // Si no estamos en una vista con este contenedor, salimos silenciosamente
+
+    // 2. Filtramos el estado para obtener solo los productos destacados
+    const featuredProducts = this.state.products.filter(p => p.featured);
+
+    // 3. Renderizamos las tarjetas
+    container.innerHTML = featuredProducts.map(p => this.createProductCard(p)).join('');
     },
 
     renderCatalog: function() {
