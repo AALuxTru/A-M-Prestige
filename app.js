@@ -106,9 +106,9 @@ const app = {
     // --- CARGA DE DATOS ---
     fetchProducts: async function() {
         try {
-            // Añadir cache-buster para evitar que el navegador guarde en caché una petición vieja
-            const cacheBuster = '&t=' + new Date().getTime();
-            let res = await fetch(this.GAS_URL + "?action=getProducts" + cacheBuster, { cache: "no-store" });
+            // CORREGIDO: Igualado al método de Brilho para evitar conflictos con Apps Script
+            const cacheBuster = '?t=' + new Date().getTime();
+            let res = await fetch(this.GAS_URL + cacheBuster, { cache: "no-store" });
             let data = await res.json();
 
             this.state.products = data.map(prod => {
@@ -117,13 +117,11 @@ const app = {
                 return {
                     id: String(prod.id || prod.ID || ''),
                     name: prod.name || prod.Nombre || '',
-                    // ADAPTADO: Ahora lee 'cat' (de Brilho) además de 'category'
                     category: String(prod.cat || prod.category || prod.Categoria || '').toLowerCase(),
                     material: prod.material || prod.Material || '',
                     price: basePrice,
                     img: this.formatImageUrl(prod.img || prod.Imagen || ''),
                     stock: parseInt(prod.stock || prod.Stock || 0),
-                    // ADAPTADO: Ahora lee 'isNew' (de Brilho) para mostrarlo en destacados
                     featured: prod.isNew === true || String(prod.isNew).toLowerCase() === 'true' || prod.isNew === 1 || prod.featured === true || prod.Destacado === true
                 };
             });
@@ -231,6 +229,30 @@ const app = {
         this.state.currentPage = page;
         this.renderCatalog();
         window.scrollTo({ top: document.getElementById('view-catalog').offsetTop - 80, behavior: 'smooth' });
+    },
+
+    // --- RENDERIZADO DE TARJETAS ---
+    createProductCard: function(p) {
+        const isOutOfStock = p.stock === 0;
+        const btnStyle = isOutOfStock ? 'opacity: 0.5; cursor: not-allowed;' : '';
+        const btnText = isOutOfStock ? 'Agotado' : 'Añadir al Carrito';
+        const badge = p.featured ? `<span style="position:absolute; top:10px; right:10px; background:var(--accent-color, #d4af37); color:#fff; padding:2px 8px; border-radius:12px; font-size:0.8rem;">Destacado</span>` : '';
+
+        return `
+        <div class="product-card" style="position:relative;">
+            ${badge}
+            <img src="${p.img}" alt="${p.name}" style="${isOutOfStock ? 'opacity:0.5;' : ''}" onerror="this.src='assets/placeholder.png'">
+            <div class="product-info">
+                <span style="font-size: 0.8rem; color: #888; text-transform: uppercase;">${p.category}</span>
+                <h3 class="product-title" style="margin: 5px 0;">${p.name}</h3>
+                <div class="product-price" style="font-weight: bold; margin-bottom: 10px;">$${p.price.toFixed(2)}</div>
+                <button class="btn btn-primary" style="width:100%; ${btnStyle}" 
+                        onclick="app.addToCart('${p.id}')" ${isOutOfStock ? 'disabled' : ''}>
+                    ${btnText}
+                </button>
+            </div>
+        </div>
+        `;
     },
 
     // --- CARRITO ---
