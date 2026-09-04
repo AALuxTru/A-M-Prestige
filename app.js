@@ -3,7 +3,7 @@
  */
 
 const app = {
-    GAS_URL: "https://script.google.com/macros/s/TU_SCRIPT_ID/exec", 
+    GAS_URL: "https://script.google.com/macros/s/AKfycbzEOc60qnM5ehbXsQb1UfCmQj_irzNiHF4I-gr7vDYwo5QwHpGQj7bHzNmk5o0mTJrW/exec", 
     WHATSAPP_NUMBER: "584125918677", 
 
     state: {
@@ -127,21 +127,6 @@ const app = {
         } catch (error) {
             console.error("Error al obtener los productos desde la base de datos:", error);
         }
-    },
-
-    // --- RENDERIZADO ---
-    createProductCard: function(prod) {
-        return `
-            <div class="product-card">
-                ${prod.featured ? '<div class="product-badge">Destacado</div>' : ''}
-                <i class="fas fa-heart product-fav"></i>
-                <img src="${prod.img}" alt="${prod.name}" class="product-img">
-                <div class="product-category">${prod.material}</div>
-                <h3 class="product-title">${prod.name}</h3>
-                <div class="product-price">$${prod.price.toFixed(2)}</div>
-                <button class="add-to-cart-btn" onclick="app.addToCart('${prod.id}')">Agregar al Carrito</button>
-            </div>
-        `;
     },
 
     renderFeatured: function() {
