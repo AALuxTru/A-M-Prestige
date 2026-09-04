@@ -112,19 +112,22 @@ const app = {
             let data = await res.json();
 
             this.state.products = data.map(prod => {
-                const basePrice = parseFloat(prod.price || prod.Precio || 0);
+    // Saneamiento de precio heredado de la lógica robusta
+    const rawPrice = String(prod.price || prod.Precio || 0);
+    const basePrice = parseFloat(rawPrice.replace(/[$\s]/g, '').replace(',', '.')) || 0;
 
-                return {
-                    id: String(prod.id || prod.ID || ''),
-                    name: prod.name || prod.Nombre || '',
-                    category: String(prod.cat || prod.category || prod.Categoria || '').toLowerCase(),
-                    material: prod.material || prod.Material || '',
-                    price: basePrice,
-                    img: this.formatImageUrl(prod.img || prod.Imagen || ''),
-                    stock: parseInt(prod.stock || prod.Stock || 0),
-                    featured: prod.isNew === true || String(prod.isNew).toLowerCase() === 'true' || prod.isNew === 1 || prod.featured === true || prod.Destacado === true
-                };
-            });
+    return {
+        id: String(prod.id || prod.ID || ''),
+        name: prod.name || prod.Nombre || '',
+        ref: prod.ref || prod.Ref || '', // ¡Se añade la extracción del código!
+        category: String(prod.cat || prod.category || prod.Categoria || '').toLowerCase().trim(), // Se añade .trim()
+        material: prod.material || prod.Material || '',
+        price: basePrice,
+        img: this.formatImageUrl(prod.img || prod.Imagen || ''),
+        stock: parseInt(prod.stock || prod.Stock || 0) || 0,
+        featured: prod.isNew === true || String(prod.isNew).toLowerCase() === 'true' || prod.isNew === 1 || prod.featured === true || prod.Destacado === true
+    };
+});
 
             this.renderFeatured();
             if(this.state.currentView === 'catalog') this.renderCatalog();
@@ -146,13 +149,13 @@ const app = {
         
         // 1. Aplicar filtro de búsqueda
         if (this.state.searchQuery) {
-            filtered = filtered.filter(p => {
-                const searchLower = this.state.searchQuery;
-                const nameMatch = p.name.toLowerCase().includes(searchLower);
-                const idMatch = p.id.toLowerCase() === searchLower;
-                return nameMatch || idMatch;
-            });
-        } 
+    filtered = filtered.filter(p => {
+        const searchLower = this.state.searchQuery;
+        const nameMatch = p.name.toLowerCase().includes(searchLower);
+        const refMatch = p.ref.toLowerCase().includes(searchLower); // Búsqueda por código de referencia
+        return nameMatch || refMatch;
+    });
+}
         // 2. Aplicar filtro por categoría
         else if (this.state.categoryFilter) {
             if(['plata', 'acero', 'goldfield', 'yess'].includes(this.state.categoryFilter)) {
@@ -233,27 +236,31 @@ const app = {
 
     // --- RENDERIZADO DE TARJETAS ---
     createProductCard: function(p) {
-        const isOutOfStock = p.stock === 0;
-        const btnStyle = isOutOfStock ? 'opacity: 0.5; cursor: not-allowed;' : '';
-        const btnText = isOutOfStock ? 'Agotado' : 'Añadir al Carrito';
-        const badge = p.featured ? `<span style="position:absolute; top:10px; right:10px; background:var(--accent-color, #d4af37); color:#fff; padding:2px 8px; border-radius:12px; font-size:0.8rem;">Destacado</span>` : '';
+    const isOutOfStock = p.stock === 0;
+    const btnStyle = isOutOfStock ? 'opacity: 0.5; cursor: not-allowed;' : '';
+    const btnText = isOutOfStock ? 'Agotado' : 'Añadir al Carrito';
+    const badge = p.featured ? `<span style="position:absolute; top:10px; right:10px; background:var(--accent-color, #d4af37); color:#fff; padding:2px 8px; border-radius:12px; font-size:0.8rem;">Destacado</span>` : '';
 
-        return `
-        <div class="product-card" style="position:relative;">
-            ${badge}
-            <img src="${p.img}" alt="${p.name}" style="${isOutOfStock ? 'opacity:0.5;' : ''}" onerror="this.src='assets/placeholder.png'">
-            <div class="product-info">
-                <span style="font-size: 0.8rem; color: #888; text-transform: uppercase;">${p.category}</span>
-                <h3 class="product-title" style="margin: 5px 0;">${p.name}</h3>
-                <div class="product-price" style="font-weight: bold; margin-bottom: 10px;">$${p.price.toFixed(2)}</div>
-                <button class="btn btn-primary" style="width:100%; ${btnStyle}" 
-                        onclick="app.addToCart('${p.id}')" ${isOutOfStock ? 'disabled' : ''}>
-                    ${btnText}
-                </button>
-            </div>
+    // Escapar comillas para evitar que rompan el HTML
+    const safeName = String(p.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+    return `
+    <div class="product-card" style="position:relative;">
+        ${badge}
+        <img src="${p.img}" alt="${safeName}" style="${isOutOfStock ? 'opacity:0.5;' : ''}" onerror="this.src='assets/placeholder.png'">
+        <div class="product-info">
+            <span style="font-size: 0.8rem; color: #888; text-transform: uppercase;">${p.category}</span>
+            <h3 class="product-title" style="margin: 5px 0;">${p.name}</h3>
+            <p style="font-size: 0.85rem; color: #666; margin-bottom: 5px;">Ref: ${p.ref || 'N/A'}</p>
+            <div class="product-price" style="font-weight: bold; margin-bottom: 10px;">$${p.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+            <button class="btn btn-primary" style="width:100%; ${btnStyle}" 
+                    onclick="app.addToCart('${p.id}')" ${isOutOfStock ? 'disabled' : ''}>
+                ${btnText}
+            </button>
         </div>
-        `;
-    },
+    </div>
+    `;
+},
 
     // --- CARRITO ---
     loadCart: function() {
