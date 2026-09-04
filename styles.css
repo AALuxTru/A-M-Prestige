@@ -293,6 +293,10 @@ section {
     text-align: center;
     position: relative;
     transition: var(--transition);
+    /* Nuevas propiedades para fijar la estructura */
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Obliga a la tarjeta a estirarse a lo alto de la fila */
 }
 
 .product-card:hover {
@@ -409,6 +413,8 @@ section {
     font-weight: 600;
     cursor: pointer;
     transition: var(--transition);
+    /* Empuja el botón siempre al fondo de la tarjeta */
+    margin-top: auto; 
 }
 
 .add-to-cart-btn:hover {
@@ -728,10 +734,4 @@ footer {
     color: var(--color-text-sec);
     font-weight: 600;
     padding: 0 5px;
-}
-    
-    .form-row {
-        flex-direction: column;
-        gap: 0;
-    }
 }
