@@ -61,16 +61,19 @@ const app = {
 
     // --- UTILIDAD PARA FORMATEAR IMÁGENES DE DRIVE ---
     formatImageUrl: function(url) {
-        if (!url) return '';
-        if (!url.includes('drive.google.com')) return url;
+        if (!url) return 'assets/placeholder.png'; // Te sugiero tener una imagen por defecto
         
-        // Extrae el ID de la imagen de Google Drive
-        const match = url.match(/[-\w]{25,}/);
+        // IMPORTANTE: Limpiar comillas y espacios para que el Base64 no rompa el atributo src del HTML
+        let cleanUrl = String(url).replace(/"/g, '%22').trim();
+
+        if (!cleanUrl.includes('drive.google.com')) return cleanUrl;
+        
+        // Extrae el ID de la imagen de Google Drive (por si aún quedan URLs antiguas)
+        const match = cleanUrl.match(/[-\w]{25,}/);
         if (match && match[0]) {
-            // Usar el endpoint de miniaturas (thumbnail) evita el error 403 Forbidden de Google
             return `https://drive.google.com/thumbnail?id=${match[0]}&sz=w800`;
         }
-        return url;
+        return cleanUrl;
     },
 
     // --- NUEVA LÓGICA DE BÚSQUEDA ---
@@ -103,7 +106,9 @@ const app = {
     // --- CARGA DE DATOS ---
     fetchProducts: async function() {
         try {
-            let res = await fetch(this.GAS_URL + "?action=getProducts");
+            // Añadir cache-buster para evitar que el navegador guarde en caché una petición vieja
+            const cacheBuster = '&t=' + new Date().getTime();
+            let res = await fetch(this.GAS_URL + "?action=getProducts" + cacheBuster, { cache: "no-store" });
             let data = await res.json();
 
             this.state.products = data.map(prod => {
@@ -112,12 +117,14 @@ const app = {
                 return {
                     id: String(prod.id || prod.ID || ''),
                     name: prod.name || prod.Nombre || '',
-                    category: String(prod.category || prod.Categoria || '').toLowerCase(),
+                    // ADAPTADO: Ahora lee 'cat' (de Brilho) además de 'category'
+                    category: String(prod.cat || prod.category || prod.Categoria || '').toLowerCase(),
                     material: prod.material || prod.Material || '',
                     price: basePrice,
                     img: this.formatImageUrl(prod.img || prod.Imagen || ''),
                     stock: parseInt(prod.stock || prod.Stock || 0),
-                    featured: prod.featured === true || prod.featured === "TRUE" || prod.Destacado === true
+                    // ADAPTADO: Ahora lee 'isNew' (de Brilho) para mostrarlo en destacados
+                    featured: prod.isNew === true || String(prod.isNew).toLowerCase() === 'true' || prod.isNew === 1 || prod.featured === true || prod.Destacado === true
                 };
             });
 
